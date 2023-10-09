@@ -31,7 +31,7 @@ COPY requirements.txt .
 RUN python3 -m pip install --upgrade pip wheel
 RUN pip install --no-cache -r requirements.txt albumentations comet gsutil notebook \
     coremltools onnx onnx-simplifier onnxruntime 'openvino-dev>=2023.0'
-    # tensorflow tensorflowjs \
+# tensorflow tensorflowjs \
 
 # Set environment variables
 ENV OMP_NUM_THREADS=1
