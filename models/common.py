@@ -409,7 +409,7 @@ class DetectMultiBackend(nn.Module):
             tflite,
             edgetpu,
             tfjs,
-            paddle,
+            # paddle,
             triton,
         ) = self._model_type(w)
         fp16 &= pt or jit or onnx or engine or triton  # FP16

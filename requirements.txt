@@ -47,3 +47,9 @@ setuptools>=65.5.1 # Snyk vulnerability fix
 # mss  # screenshots
 # albumentations>=1.0.3
 # pycocotools>=2.0.6  # COCO mAP
+onnx>=1.14.0  # ONNX export
+onnxsim>=0.4.33
+# onnx-graphsurgeon>=0.3.20
+onnxoptimizer>=0.3.0
+onnxruntime>=1.16.0
+onnxruntime-gpu>=1.16.0
