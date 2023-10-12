@@ -23,7 +23,11 @@ class TRT_NonMaxSuppression(torch.autograd.Function):
         zeros = torch.zeros((num_det,), dtype=torch.int64, device=device)
         selected_indices = torch.cat([batches[None], zeros[None], idxs[None]], 0).T.contiguous()
         selected_indices = selected_indices.to(torch.int64)
-        return selected_indices
+        return_selected_indices = torch.zeros(
+            (batch * max_output_boxes_per_class, 3), dtype=torch.int64, device=device
+        )
+        return_selected_indices[: selected_indices.shape[0]] = selected_indices
+        return return_selected_indices
 
     @staticmethod
     def symbolic(
@@ -436,8 +440,6 @@ class ONNX_TRT(nn.Module):
             .sigmoid()
             .view(total_object, proto_h, proto_w)
         )
-
-        return selected_indices, selected_boxes, selected_categories, selected_scores, masks
 
         # Crop
         downsampled_bboxes = selected_boxes * self.pooler_scale
