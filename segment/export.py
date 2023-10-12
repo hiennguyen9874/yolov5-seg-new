@@ -64,7 +64,8 @@ if str(ROOT) not in sys.path:
 if platform.system() != "Windows":
     ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-from models.experimental import attempt_load, End2End, End2EndRoialign
+from models.experimental import attempt_load
+from models.end2end import End2End, End2EndRoialign
 from models.yolo import ClassificationModel, Detect, DetectionModel, SegmentationModel
 from utils.dataloaders import LoadImages
 from utils.general import (
@@ -239,8 +240,8 @@ def export_onnx(
         do_constant_folding=not train,
         # do_constant_folding=False,
         input_names=["images"],
-        output_names=output_names,
-        dynamic_axes=dynamic_axes,
+        # output_names=output_names,
+        # dynamic_axes=dynamic_axes,
     )
 
     # Checks
