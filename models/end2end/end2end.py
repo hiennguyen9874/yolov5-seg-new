@@ -58,6 +58,7 @@ class End2EndRoialign(nn.Module):
         sampling_ratio=0,
         device=None,
         trt=False,
+        roi_align_type=0,
     ):
         super().__init__()
         device = device if device else torch.device("cpu")
@@ -73,6 +74,7 @@ class End2EndRoialign(nn.Module):
             pooler_scale=pooler_scale,
             sampling_ratio=sampling_ratio,
             device=device,
+            roi_align_type=roi_align_type,
         )
         self.end2end.eval()
 

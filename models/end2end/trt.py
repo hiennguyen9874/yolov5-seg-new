@@ -223,7 +223,7 @@ class TRT_RoiAlign(torch.autograd.Function):
         X,
         rois,
         batch_indices,
-        coordinate_transformation_mode="output_half_pixel",
+        # coordinate_transformation_mode="output_half_pixel",
         mode="avg",
         output_height=56,
         output_width=56,
@@ -242,7 +242,7 @@ class TRT_RoiAlign(torch.autograd.Function):
         X,
         rois,
         batch_indices,
-        coordinate_transformation_mode="output_half_pixel",
+        # coordinate_transformation_mode="output_half_pixel",
         mode="avg",
         output_height=56,
         output_width=56,
@@ -254,7 +254,7 @@ class TRT_RoiAlign(torch.autograd.Function):
             X,
             rois,
             batch_indices,
-            coordinate_transformation_mode_s=coordinate_transformation_mode,
+            # coordinate_transformation_mode_s=coordinate_transformation_mode,
             mode_s=mode,
             output_height_i=output_height,
             output_width_i=output_width,
@@ -629,11 +629,13 @@ class ONNX_TRT_ROIALIGN(nn.Module):
         pooler_scale=0.25,
         sampling_ratio=0,
         device=None,
+        roi_align_type=0,
     ):
         super().__init__()
         self.max_obj_i = max_obj
         self.max_wh = max_wh
         self.device = device if device else torch.device("cpu")
+        self.roi_align_type = roi_align_type  # 0, 1, or 2
 
         # For TRT_EfficientNMS_TRT
         self.register_buffer("max_obj", torch.tensor([max_obj]))
@@ -689,14 +691,44 @@ class ONNX_TRT_ROIALIGN(nn.Module):
         selected_mask = mask[X, Y, :]
 
         # Test1-5
-        pooled_proto = TRT_RoIAlignDynamic_TRT.apply(
-            proto,
-            torch.cat((X.unsqueeze(1).float(), selected_boxes), dim=1),
-            self.mask_resolution,
-            self.mask_resolution,
-            self.pooler_scale,
-            self.sampling_ratio,
-        )
+        # pooled_proto = TRT_RoIAlignDynamic_TRT.apply(
+        #     proto,
+        #     torch.cat((X.unsqueeze(1).float(), selected_boxes), dim=1),
+        #     self.mask_resolution,
+        #     self.mask_resolution,
+        #     self.pooler_scale,
+        #     self.sampling_ratio,
+        # )
+        
+        if self.roi_align_type == 0:
+            pooled_proto = TRT_RoiAlign.apply(
+                proto,
+                selected_boxes,
+                X,
+                # "half_pixel",
+                "avg",
+                self.mask_resolution,
+                self.mask_resolution,
+                self.sampling_ratio,
+                self.pooler_scale,
+            )
+        elif self.roi_align_type == 1:
+            pooled_proto = TRT_RoIAlignDynamic_TRT.apply(
+                proto,
+                torch.cat((X.unsqueeze(1).float(), selected_boxes), dim=1),
+                self.mask_resolution,
+                self.mask_resolution,
+                self.pooler_scale,
+                self.sampling_ratio,
+            )
+        else:
+            # pooled_proto = TRT_RoIAlign2Dynamic_TRT.apply(
+            #     proto,
+            #     det_boxes,
+            #     self.mask_resolution,
+            #     self.image_size,
+            # )
+            raise NotImplementedError
 
         masks = (
             torch.matmul(
@@ -805,6 +837,7 @@ class ONNX_TRT_ROIALIGN2(nn.Module):
         pooler_scale=0.25,
         sampling_ratio=0,
         device=None,
+        roi_align_type=0,
     ):
         super().__init__()
         self.device = device if device else torch.device("cpu")
@@ -817,7 +850,7 @@ class ONNX_TRT_ROIALIGN2(nn.Module):
         self.pooler_scale = pooler_scale
         self.sampling_ratio = sampling_ratio
         self.image_size = 640
-        self.roi_align_type = 2  # 1, or 2
+        self.roi_align_type = roi_align_type  # 0, 1, or 2
 
         self.background_class = (-1,)
         self.score_activation = 0
@@ -848,11 +881,23 @@ class ONNX_TRT_ROIALIGN2(nn.Module):
         det_indices = det_indices.view(total_object).to(torch.long)
         det_masks = masks[batch_indices, det_indices]
 
-        if self.roi_align_type == 1:
+        if self.roi_align_type == 0:
+            pooled_proto = TRT_RoiAlign.apply(
+                proto,
+                det_boxes.view(total_object, 4),
+                batch_indices,
+                # "half_pixel",
+                "avg",
+                self.mask_resolution,
+                self.mask_resolution,
+                self.sampling_ratio,
+                self.pooler_scale,
+            )
+        elif self.roi_align_type == 1:
             pooled_proto = TRT_RoIAlignDynamic_TRT.apply(
                 proto,
                 torch.cat(
-                    (batch_indices.unsqueeze(1).float(), det_boxes.view(total_obejct, 4)), dim=2
+                    (batch_indices.unsqueeze(1).float(), det_boxes.view(total_object, 4)), dim=2
                 ),
                 self.mask_resolution,
                 self.mask_resolution,

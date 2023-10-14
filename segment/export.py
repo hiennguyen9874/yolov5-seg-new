@@ -123,7 +123,7 @@ def try_export(inner_func):
     return outer_func
 
 
-# @try_export
+@try_export
 def export_onnx(
     model,
     im,
@@ -145,6 +145,7 @@ def export_onnx(
     image_size,
     cleanup,
     roi_align,
+    roi_align_type,
     prefix=colorstr("ONNX:"),
 ):
     # YOLOv5 ONNX export
@@ -210,6 +211,7 @@ def export_onnx(
                 device=device,
                 trt=trt,
                 max_wh=max(image_size),
+                roi_align_type=roi_align_type,
             )
         else:
             model = End2End(
@@ -240,8 +242,8 @@ def export_onnx(
         do_constant_folding=not train,
         # do_constant_folding=False,
         input_names=["images"],
-        # output_names=output_names,
-        # dynamic_axes=dynamic_axes,
+        output_names=output_names,
+        dynamic_axes=dynamic_axes,
     )
 
     # Checks
@@ -321,6 +323,7 @@ def run(
     trt=False,
     cleanup=False,
     roi_align=False,
+    roi_align_type=0,
 ):
     t = time.time()
     include = [x.lower() for x in include]  # to lowercase
@@ -419,6 +422,7 @@ def run(
             sampling_ratio=sampling_ratio,
             image_size=imgsz,
             roi_align=roi_align,
+            roi_align_type=roi_align_type,
         )
     if xml:  # OpenVINO
         raise NotImplementedError
@@ -506,6 +510,12 @@ def parse_opt():
     )
     parser.add_argument(
         "--roi-align", action="store_true", help="ONNX: Crop And Resize mask using roialign"
+    )
+    parser.add_argument(
+        "--roi-align-type",
+        type=int,
+        default=0,
+        help="ONNX: Roialign type, 0: RoiAlign, 1: RoIAlignDynamic_TRT, 2: RoIAlign2Dynamic_TRT",
     )
     opt = parser.parse_args()
     print_args(vars(opt))
